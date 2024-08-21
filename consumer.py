@@ -53,15 +53,39 @@ def minha_callback(ch, method, properties, body, printer_name='cupom'):
         forma_pagamento = mensagem_json['forma_pagamento']
         total = mensagem_json['total']
         recibo = mensagem_json['recibo']
-        
-        # Aqui você pode fazer o que precisar com os dados
-        text = f"Data: {data}\n"
-        text += f"Vendedor: {vendedor}\n"
-        text += f"Cliente: {cliente}\n"
-        text += f"Forma de Pagamento: {forma_pagamento}\n"
-        text += f"Total: {total}\n"
-        text += f"Recibo: {recibo}\n"
 
+
+        # Montagem do texto do recibo
+        texto_recibo = 'LOJA JK MODAS E VARIEDADES\n'
+        texto_recibo += f'{data}\n\n'
+        texto_recibo += f"============= Recibo de Compra =============\n\n"
+        texto_recibo += f"Vendedor: {vendedor}\n"
+        texto_recibo += f"Forma de Pagamento: {forma_pagamento}\n"
+        texto_recibo += "---------------------------------\n"
+        texto_recibo += "Produtos\t\t\t\tPreço\t\t\t\tQtd\n"
+        texto_recibo += "---------------------------------\n"
+
+        # Quebrar os campos concatenados do dicionário recibo para exibir separadamente
+        descricao_list = recibo['descricao'].split(', ')
+        venda_list = recibo['venda'].split(', ')
+        quantidade_list = recibo['quantidade'].split(', ')
+
+        # Iterar sobre os produtos para adicioná-los ao recibo
+        for i in range(len(descricao_list)):
+            texto_recibo += f"{descricao_list[i]}\t\t\t{venda_list[i]}\t\t\t{quantidade_list[i]}\n"
+
+        texto_recibo += "---------------------------------\n"
+        texto_recibo += f"Total: R${str(total).replace('.',',')}\n"
+        texto_recibo += "----------------------------------\n"
+        texto_recibo += "Trocas somente serão realizadas mediante a apresentação deste cupom e em 10 dias corridos.\n\n\n"
+        texto_recibo += 'Nos siga no Instagram:\n'
+        texto_recibo += '@jk_modas_e_variedades\n\n\n'
+        texto_recibo += 'Nos chame no Whatsapp:\n'
+        texto_recibo += "(11)93482-2157\n\n\n"
+        texto_recibo += 'VOLTE SEMPRE!'
+
+
+        print(texto_recibo)
         try:
             hPrinter = win32print.OpenPrinter(printer_name)
             try:
@@ -71,11 +95,15 @@ def minha_callback(ch, method, properties, body, printer_name='cupom'):
 
 
                 # Converte o texto para cp850
-                encoded_text = text.encode('cp850')
+                encoded_text = texto_recibo.encode('cp850')
                 print(f"Texto codificado para cp850: {encoded_text}")  # Imprime a representação codificada para depuração
 
                 # Envia o texto para a impressora
                 win32print.WritePrinter(hPrinter, encoded_text)
+
+                #corta o papel
+                cut_command = b'\x1d\x56\x00'
+                win32print.WritePrinter(hPrinter, cut_command)
 
                 win32print.EndPagePrinter(hPrinter)
                 win32print.EndDocPrinter(hPrinter)
